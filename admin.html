@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Admin - KTN</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+  body { font-family: 'Segoe UI', sans-serif; background: #f3f6fb; padding: 30px; }
+  .container { max-width: 800px; margin: auto; background: white; padding: 30px; border-radius: 12px; }
+  input, textarea, button { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 6px; font-family: inherit; }
+  button { background: #2563eb; color: white; font-weight: bold; cursor: pointer; border: none; }
+  .box { border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px; margin-bottom: 20px; background: #f8fafc; }
+  a { text-decoration: none; color: #2563eb; font-weight: bold; }
+</style>
+</head>
+<body>
+  <div class="container">
+    <h2><i class="fa-solid fa-gear"></i> Panel Admin</h2>
+    
+    <div class="box">
+      <h3>Tambah Tugas</h3>
+      <input type="text" id="tMatkul" placeholder="Mata Kuliah">
+      <input type="text" id="tJudul" placeholder="Judul Tugas">
+      <input type="text" id="tBatas" placeholder="Batas Waktu (20 Nov 2026)">
+      <button onclick="addTugas()">Simpan Tugas</button>
+    </div>
+
+    <div class="box">
+      <h3>Tambah Pengumuman</h3>
+      <input type="text" id="pJudul" placeholder="Judul Pengumuman">
+      <textarea id="pIsi" placeholder="Isi"></textarea>
+      <button onclick="addPengumuman()">Simpan Pengumuman</button>
+    </div>
+
+    <div class="box">
+      <h3>Input Nilai Mahasiswa (NIM)</h3>
+      <input type="text" id="nNim" placeholder="Masukkan NIM">
+      <input type="number" id="nTugas" placeholder="Nilai Tugas">
+      <input type="number" id="nUts" placeholder="Nilai UTS">
+      <input type="number" id="nUas" placeholder="Nilai UAS">
+      <button onclick="addNilai()">Simpan Nilai</button>
+    </div>
+
+    <a href="dashboard.html"><i class="fa-solid fa-arrow-left"></i> Kembali ke Dashboard</a>
+  </div>
+
+  <script type="module">
+    import { db } from './koneksi_firebase.js';
+    import { ref, push, update, get, child } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    const currentUser = JSON.parse(localStorage.getItem('ktn_currentUser') || 'null');
+    if (!currentUser || currentUser.nim !== '2024001') {
+      alert('Akses Ditolak! Anda bukan Admin.');
+      window.location.href = 'dashboard.html';
+    }
+
+    window.addTugas = async function() {
+      const matkul = document.getElementById('tMatkul').value;
+      const judul = document.getElementById('tJudul').value;
+      const batas = document.getElementById('tBatas').value;
+      if(!matkul || !judul || !batas) return alert('Isi semua data!');
+      await push(ref(db, 'tugas'), { matkul, judul, batas });
+      alert('Tugas ditambahkan!');
+    }
+
+    window.addPengumuman = async function() {
+      const judul = document.getElementById('pJudul').value;
+      const isi = document.getElementById('pIsi').value;
+      if(!judul || !isi) return alert('Isi semua data!');
+      await push(ref(db, 'pengumuman'), { judul, isi, tanggal: new Date().toLocaleDateString('id-ID') });
+      alert('Pengumuman ditambahkan!');
+    }
+
+    window.addNilai = async function() {
+      const nim = document.getElementById('nNim').value;
+      const t = document.getElementById('nTugas').value;
+      const uts = document.getElementById('nUts').value;
+      const uas = document.getElementById('nUas').value;
+      if(!nim) return alert('Masukkan NIM!');
+      
+      try {
+        const dbRef = ref(db);
+        const snap = await get(child(dbRef, `users/${nim}`));
+        if(!snap.exists()) return alert('NIM tidak ditemukan!');
+        
+        await update(ref(db, 'users/' + nim), { nilai_tugas: parseInt(t), nilai_uts: parseInt(uts), nilai_uas: parseInt(uas) });
+        alert('Nilai berhasil diupdate!');
+      } catch(e) { alert('Error: ' + e.message); }
+    }
+  </script>
+</body>
+</html>
